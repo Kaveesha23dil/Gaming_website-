@@ -1,28 +1,42 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { TiLocationArrow } from "react-icons/ti";
 
 const BentoTilt = ({ children, className = "" }) => {
     const [transformStyle, setTransformStyle] = useState('');
     const itemRef = useRef(null);
+    const rafRef = useRef(null);
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = useCallback((e) => {
         if (!itemRef.current) return;
 
-        const { left, top, width, height } = itemRef.current.getBoundingClientRect();
-        const relativeX = (e.clientX - left) / width;
-        const relativeY = (e.clientY - top) / height;
+        // Cancel any pending animation frame to throttle updates
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
 
-        const tiltX = (relativeY - 0.5) * 5;
-        const tiltY = (relativeX - 0.5) * -5;
+        rafRef.current = requestAnimationFrame(() => {
+            if (!itemRef.current) return;
+            const { left, top, width, height } = itemRef.current.getBoundingClientRect();
+            const relativeX = (e.clientX - left) / width;
+            const relativeY = (e.clientY - top) / height;
 
-        const newTransform = `perspective(700px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) 
-        scale3d(0.98, 0.98, 0.98)`;
-        setTransformStyle(newTransform);
-    };
+            const tiltX = (relativeY - 0.5) * 5;
+            const tiltY = (relativeX - 0.5) * -5;
 
-    const handleMouseLeave = () => {
+            const newTransform = `perspective(700px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(0.98, 0.98, 0.98)`;
+            setTransformStyle(newTransform);
+        });
+    }, []);
+
+    const handleMouseLeave = useCallback(() => {
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
         setTransformStyle('');
-    };
+    }, []);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        };
+    }, []);
 
     return (
         <div
@@ -38,13 +52,39 @@ const BentoTilt = ({ children, className = "" }) => {
 };
 
 const BentoCard = ({ src, title, description }) => {
+    const videoRef = useRef(null);
+    const containerRef = useRef(null);
+
+    // Intersection Observer: only play video when card is visible
+    useEffect(() => {
+        const video = videoRef.current;
+        const container = containerRef.current;
+        if (!video || !container) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    video.play().catch(() => {});
+                } else {
+                    video.pause();
+                }
+            },
+            { threshold: 0.25 }
+        );
+
+        observer.observe(container);
+        return () => observer.disconnect();
+    }, []);
+
     return (
-        <div className="relative size-full">
+        <div ref={containerRef} className="relative size-full">
             <video
+                ref={videoRef}
                 src={src}
                 loop
                 muted
-                autoPlay
+                playsInline
+                preload="metadata"
                 className="absolute left-0 top-0 size-full object-cover object-center"
             />
             <div className="relative z-10 flex size-full flex-col justify-between p-5 text-blue-50">
@@ -73,7 +113,7 @@ const Features = () => {
                 </div>
                 <BentoTilt className="relative mb-7 h-96 w-full overflow-hidden rounded-md md:h-[65vh]">
                     <BentoCard
-                        src="public/videos/feature-1.mp4"
+                        src="/videos/feature-1.mp4"
                         title={<>radi<b>n</b>t</>}
                         description="A cross-platform metagame app, turning your activities across Web2 and Web3 games into a rewarding adventure."
                     />
@@ -81,21 +121,21 @@ const Features = () => {
                 <div className="grid h-[135vh] grid-cols-2 grid-rows-3 gap-7">
                     <BentoTilt className="bento-tilt_1 row-span-1 md:col-span-1 md:row-span-2">
                         <BentoCard
-                            src="public/videos/feature-2.mp4"
+                            src="/videos/feature-2.mp4"
                             title={<>zig<b>m</b>a</>}
                             description="An anime and gaming-inspired NFT collection - the IP primed for expansion."
                         />
                     </BentoTilt>
                     <BentoTilt className="bento-tilt_1 row-span-1 ms-32 md:col-span-1 md:ms-0">
                         <BentoCard
-                            src="public/videos/feature-3.mp4"
+                            src="/videos/feature-3.mp4"
                             title={<>n<b>e</b>xus</>}
                             description="A gamified social hub, adding a new dimension of play to social interaction for Web3 communities."
                         />
                     </BentoTilt>
                     <BentoTilt className="bento-tilt_1 me-14 md:col-span-1 md:me-0">
                         <BentoCard
-                            src="public/videos/feature-4.mp4"
+                            src="/videos/feature-4.mp4"
                             title={<>az<b>u</b>l</>}
                             description="A cross-world AI Agent - elevating your gameplay to be more fun and productive."
                         />
@@ -110,10 +150,12 @@ const Features = () => {
                     </BentoTilt>
                     <BentoTilt className="bento-tilt_2">
                         <video
-                            src="public/videos/feature-5.mp4"
+                            src="/videos/feature-5.mp4"
                             loop
                             muted
+                            playsInline
                             autoPlay
+                            preload="metadata"
                             className="size-full object-cover object-center"
                         />
                     </BentoTilt>

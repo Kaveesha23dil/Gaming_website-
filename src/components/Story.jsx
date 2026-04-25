@@ -63,7 +63,8 @@ const Story = () => {
                                     ref={frameRef}
                                     onMouseLeave={handleMouseLeave}
                                     onMouseMove={handleMouseMove}
-                                    src="public/img/entrance.webp"
+                                    src="/img/entrance.webp"
+                                    loading="lazy"
                                     alt="entrance"
                                     className="object-contain"
                                 />

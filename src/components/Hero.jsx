@@ -15,26 +15,23 @@ const Hero = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [loadedVideos, setLoadedVideos] = useState(0);
 
-    const totalVideos = 4; // Ensure you have this many videos available.
+    const totalVideos = 4;
     const nextVideoRef = useRef(null);
+    const miniVideoRef = useRef(null);
 
     const handleVideoLoad = () => {
         setLoadedVideos((prev) => prev + 1);
-        if (loadedVideos + 1 >= totalVideos) {
-            setIsLoading(false); // All videos loaded
-        }
     };
 
     const upcomingVideoIndex = (currentIndex % totalVideos) + 1;
 
     const handleMiniVdClick = () => {
         setHasClicked(true);
-
         setCurrentIndex(upcomingVideoIndex);
     };
 
     useEffect(() => {
-        if (loadedVideos === totalVideos - 1) {
+        if (loadedVideos >= totalVideos - 1) {
             setIsLoading(false);
         }
     }, [loadedVideos]);
@@ -51,7 +48,7 @@ const Hero = () => {
             height: '100%',
             duration: 1,
             ease: 'power1.inOut',
-            onStart: () => nextVideoRef.current.play(),
+            onStart: () => nextVideoRef.current?.play(),
         });
 
         gsap.from('#current-video', {
@@ -81,7 +78,7 @@ const Hero = () => {
         });
     });
 
-    const getVideoSrc = (index) => `public/videos/hero-${index}.mp4`; // Correct template literal
+    const getVideoSrc = (index) => `/videos/hero-${index}.mp4`;
 
     return (
         <div className="relative h-dvh w-screen overflow-hidden">
@@ -111,10 +108,12 @@ const Hero = () => {
                             className="origin-center scale-50 opacity-0 transition-all duration-500 ease-in hover:scale-100 hover:opacity-100"
                         >
                             <video
-                                ref={nextVideoRef}
+                                ref={miniVideoRef}
                                 src={getVideoSrc(upcomingVideoIndex)}
                                 loop
                                 muted
+                                playsInline
+                                preload="metadata"
                                 id="current-video"
                                 className="size-64 origin-center scale-150 object-cover object-center"
                                 onLoadedData={handleVideoLoad}
@@ -126,6 +125,8 @@ const Hero = () => {
                         src={getVideoSrc(currentIndex)}
                         loop
                         muted
+                        playsInline
+                        preload="metadata"
                         id="next-video"
                         className="absolute-center invisible absolute z-20 size-64 object-cover object-center"
                         onLoadedData={handleVideoLoad}/>
@@ -135,6 +136,8 @@ const Hero = () => {
                         autoPlay
                         loop
                         muted
+                        playsInline
+                        preload="auto"
                         className="absolute left-0 top-0 size-full object-cover object-center"
                         onLoadedData={handleVideoLoad}/>
                 </div>
@@ -166,3 +169,4 @@ const Hero = () => {
 };
 
 export default Hero;
+

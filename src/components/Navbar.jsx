@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef, useState, useCallback} from "react";
 import Button from "./Button.jsx";
 import { TiLocationArrow } from "react-icons/ti";
 import {useWindowScroll} from "react-use";
@@ -9,27 +9,37 @@ const navItems = ["Nexus", "Vault", "Prologue", "About", "Contact"];
 const Navbar = () => {
     const [isAudioplaying, setIsAudioplaying] = useState(false);
     const [isIndicatorActive, setIsIndicatorActive] = useState(false);
-    const [lastScrollY, setLastScrollY] = useState(0);
     const [isNavVisible, setIsNavVisible] = useState(true);
 
     const navContainerRef = useRef(null);
     const audioElementRef = useRef(null);
+    const lastScrollYRef = useRef(0);
+    const ticking = useRef(false);
 
     const { y: currentScrollY } = useWindowScroll();
 
     useEffect(() => {
-        if(currentScrollY === 0) {
-            setIsNavVisible(true);
-            navContainerRef.current.classList.remove('floating-nav');
-        } else if (currentScrollY > lastScrollY) {
-            setIsNavVisible(false);
-            navContainerRef.current.classList.add('floating-nav');
-        } else if (currentScrollY < lastScrollY) {
-            setIsNavVisible(true);
-            navContainerRef.current.classList.add('floating-nav');
-        }
-        setLastScrollY(currentScrollY);
-    }, [currentScrollY, lastScrollY]);
+        if (ticking.current) return;
+        ticking.current = true;
+
+        requestAnimationFrame(() => {
+            const lastScrollY = lastScrollYRef.current;
+
+            if (currentScrollY === 0) {
+                setIsNavVisible(true);
+                navContainerRef.current?.classList.remove('floating-nav');
+            } else if (currentScrollY > lastScrollY) {
+                setIsNavVisible(false);
+                navContainerRef.current?.classList.add('floating-nav');
+            } else if (currentScrollY < lastScrollY) {
+                setIsNavVisible(true);
+                navContainerRef.current?.classList.add('floating-nav');
+            }
+
+            lastScrollYRef.current = currentScrollY;
+            ticking.current = false;
+        });
+    }, [currentScrollY]);
 
     useEffect(() => {
         gsap.to(navContainerRef.current, {
@@ -39,16 +49,16 @@ const Navbar = () => {
         })
     }, [isNavVisible])
 
-    const toggleAudioIndicator = () => {
+    const toggleAudioIndicator = useCallback(() => {
         setIsAudioplaying((prev) => !prev);
         setIsIndicatorActive((prev) => !prev);
-    }
+    }, []);
 
     useEffect(() => {
         if(isAudioplaying) {
-            audioElementRef.current.play();
+            audioElementRef.current?.play();
         } else {
-            audioElementRef.current.pause();
+            audioElementRef.current?.pause();
         }
     }, [isAudioplaying]);
 
@@ -89,7 +99,7 @@ const Navbar = () => {
                         </div>
 
                         <button className="ml-10 flex items-center space-x-0.5" onClick={toggleAudioIndicator}>
-                            <audio ref={audioElementRef} className="hidden" src="public/audio/loop.mp3" loop />
+                            <audio ref={audioElementRef} className="hidden" src="/audio/loop.mp3" loop preload="none" />
                                 {[1, 2, 3, 4, 5].map((bar) => (
                                     <div key={bar} className={`indicator-line ${isIndicatorActive ? 'active': ''}`}
                                     style={{ animationDelay: `${bar * 0.1}s`}}/>
